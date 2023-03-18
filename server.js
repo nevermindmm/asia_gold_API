@@ -39,6 +39,20 @@ app.get("/getAllProd", (req, res) => {
   });
 });
 
+app.get("/getBranchList", (req, res) => {
+  dbCon.query("SELECT * FROM sales", (error, results, fields) => {
+    if (error) throw error;
+
+    let message = "";
+    if (results === undefined || results.length == 0) {
+      message = "Empty";
+    } else {
+      message = "Successfully retrieved data";
+    }
+    return res.send({ error: false, data: results, message: message });
+  });
+});
+
 app.get("/getAllSales", (req, res) => {
   dbCon.query("SELECT * FROM sales", (error, results, fields) => {
     if (error) throw error;
@@ -64,14 +78,7 @@ app.post("/getProdList", (req, res) => {
     if (results === undefined || results.length == 0) {
       message = "Empty";
     }
-    dbCon.query(`SELECT * FROM product_list WHERE ${query1} AND ${query2}`, [type, pattern], (error, results, fields) => {
-      if (error) throw error;
-      let message = "";
-      if (results === undefined || results.length == 0) {
-        message = "Empty";
-      }
-      return res.send({ error: false, data: results, message: message });
-    });
+    return res.send({ error: false, data: results, message: message });
   });
 });
 
