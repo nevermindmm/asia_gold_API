@@ -39,15 +39,12 @@ app.get("/getAllProd", (req, res) => {
   });
 });
 
-app.get("/getBranchList", (req, res) => {
-  dbCon.query("SELECT * FROM sales", (error, results, fields) => {
+app.get("/getPlatformList", (req, res) => {
+  dbCon.query("SELECT DISTINCT * FROM `platform`", (error, results, fields) => {
     if (error) throw error;
-
     let message = "";
     if (results === undefined || results.length == 0) {
       message = "Empty";
-    } else {
-      message = "Successfully retrieved data";
     }
     return res.send({ error: false, data: results, message: message });
   });
