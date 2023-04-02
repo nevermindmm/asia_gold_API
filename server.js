@@ -67,8 +67,8 @@ app.get("/getAllSales", (req, res) => {
 app.post("/getProdList", (req, res) => {
   let { type, pattern } = req.body;
   let query1, query2
-  type ? query1="type = ?" :  query1="1=1";
-  pattern ? query2="pattern = ?" : query2="1=1";
+  type ? query1 = "type = ?" : query1 = "1=1";
+  pattern ? query2 = "pattern = ?" : query2 = "1=1";
   dbCon.query(`SELECT * FROM product_list WHERE ${query1} AND ${query2}`, [type, pattern], (error, results, fields) => {
     if (error) throw error;
     let message = "";
@@ -77,6 +77,17 @@ app.post("/getProdList", (req, res) => {
     }
     return res.send({ error: false, data: results, message: message });
   });
+});
+
+app.post("/addSales", (req, res) => {
+  let { date, platform, total_sales, prod_list } = req.body;
+  prod_list = JSON.stringify(prod_list)
+  if (date && platform && total_sales && prod_list) {
+    dbCon.query(`INSERT INTO sales (platform,prod_list,sales_date,total_sales) VALUES(?,?,?,?)`, [platform, prod_list, date, total_sales], (error, results, fields) => {
+      if (error) throw error;
+      res.status(200).send({message: 'Success' });
+    });
+  }
 });
 
 app.listen(4000, () => {
