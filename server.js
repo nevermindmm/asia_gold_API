@@ -85,7 +85,70 @@ app.post("/addSales", (req, res) => {
   if (date && platform && total_sales && prod_list) {
     dbCon.query(`INSERT INTO sales (platform,prod_list,sales_date,total_sales) VALUES(?,?,?,?)`, [platform, prod_list, date, total_sales], (error, results, fields) => {
       if (error) throw error;
-      res.status(200).send({message: 'Success' });
+      res.status(200).send({ message: 'Success' });
+    });
+  }
+});
+
+app.get("/getLimitOfSales", (req, res) => {
+  let limit = {
+    month: [],
+    year: []
+  }
+  th_month = [
+    'มกราคม',
+    'กุมภาพันธ์',
+    'มีนาคม',
+    'เมษายน',
+    'พฤษภาคม',
+    'มิถุนายน',
+    'กรกฎาคม',
+    'สิงหาคม',
+    'กันยายน',
+    'ตุลาคม',
+    'พฤศจิกายน',
+    'ธันวาคม',
+  ]
+  dbCon.query(`SELECT DISTINCT MONTH(sales_date) AS month FROM sales ORDER BY month ASC`, (error, results, fields) => {
+    if (error) throw error;
+    if (results.length > 0) {
+      for (let i = 0; i < results.length; i++) {
+        limit.month.push({ intMonth: results[i].month, thMonth: th_month[results[i].month - 1] })
+      }
+    }
+
+    dbCon.query(`SELECT DISTINCT YEAR(sales_date) AS year FROM sales ORDER BY year ASC`, (error, results, fields) => {
+      if (error) throw error;
+      if (results.length > 0) {
+        for (let i = 0; i < results.length; i++) {
+          limit.year.push(results[i].year)
+        }
+      }
+      return res.send(limit);
+    });
+  });
+});
+
+app.post("/getSalesData", (req, res) => {
+  let { month, year } = req.body;
+  let platform = []
+  if (month && year) {
+    dbCon.query(`SELECT DISTINCT platform FROM sales WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? ORDER BY platform`, [year, month], (error, results, fields) => {
+      if (error) throw error;
+      let platform = []
+      for (let i = 0; i < results.length; i++) {
+        platform.push(parseInt(results[i].platform))
+      }
+      platform_query = ``
+      for (let i = 0; i < platform.length; i++) {
+        platform_query += `SUM(CASE WHEN platform = ${platform[i]} THEN total_sales ELSE 0 END) AS platform_${platform[i]}, `
+      }
+      dbCon.query(`SELECT DAY(sales_date) AS sale_day,${platform_query} SUM(total_sales) AS total_sales FROM sales WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? GROUP BY sale_day ORDER BY sale_day ASC `, [year, month], (error, results, fields) => {
+        if (error) throw error;
+        // console.log(results)
+        return res.send({ data: results });
+      });
+      
     });
   }
 });
