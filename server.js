@@ -116,7 +116,6 @@ app.get("/getLimitOfSales", (req, res) => {
         limit.month.push({ intMonth: results[i].month, thMonth: th_month[results[i].month - 1] })
       }
     }
-
     dbCon.query(`SELECT DISTINCT YEAR(sales_date) AS year FROM sales ORDER BY year ASC`, (error, results, fields) => {
       if (error) throw error;
       if (results.length > 0) {
@@ -133,22 +132,22 @@ app.post("/getSalesData", (req, res) => {
   let { month, year } = req.body;
   let platform = []
   if (month && year) {
-    dbCon.query(`SELECT DISTINCT platform FROM sales WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? ORDER BY platform`, [year, month], (error, results, fields) => {
+    dbCon.query(`SELECT DISTINCT platform,platform.platform_name FROM sales INNER JOIN platform ON sales.platform=platform.platform_id WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? ORDER BY platform`, [year, month], (error, results, fields) => {
       if (error) throw error;
       let platform = []
       for (let i = 0; i < results.length; i++) {
-        platform.push(parseInt(results[i].platform))
+        platform.push({platform_id:parseInt(results[i].platform),platform_name:results[i].platform_name})
       }
       platform_query = ``
       for (let i = 0; i < platform.length; i++) {
-        platform_query += `SUM(CASE WHEN platform = ${platform[i]} THEN total_sales ELSE 0 END) AS platform_${platform[i]}, `
+        platform_query += `SUM(CASE WHEN platform = ${platform[i].platform_id} THEN total_sales ELSE 0 END) AS platform_${platform[i].platform_id}, `
       }
       dbCon.query(`SELECT DAY(sales_date) AS sale_day,${platform_query} SUM(total_sales) AS total_sales FROM sales WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? GROUP BY sale_day ORDER BY sale_day ASC `, [year, month], (error, results, fields) => {
         if (error) throw error;
         // console.log(results)
-        return res.send({ data: results });
+        return res.send({ data: results, platform: platform });
       });
-      
+
     });
   }
 });
