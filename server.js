@@ -1,5 +1,6 @@
 let express = require("express");
 let cors = require("cors");
+const bcrypt = require('bcrypt');
 let app = express();
 let bodyParser = require("body-parser");
 let mysql = require("mysql");
@@ -136,7 +137,7 @@ app.post("/getSalesData", (req, res) => {
       if (error) throw error;
       let platform = []
       for (let i = 0; i < results.length; i++) {
-        platform.push({platform_id:parseInt(results[i].platform),platform_name:results[i].platform_name})
+        platform.push({ platform_id: parseInt(results[i].platform), platform_name: results[i].platform_name })
       }
       platform_query = ``
       for (let i = 0; i < platform.length; i++) {
@@ -151,6 +152,67 @@ app.post("/getSalesData", (req, res) => {
     });
   }
 });
+app.post("/addUser", (req, res) => {
+  let { username, password, prefix, name, position, tel } = req.body;
+  bcrypt.hash(password, 10, function (err, hash) {
+    if (err) {
+      return res.status(500).send({ message: 'Hash error' });;
+    }
+    password = hash;
+    if (username && password && prefix && name && position && tel) {
+      let split_name = name.split(' ')
+      let first_name = split_name[0]
+      let last_name = split_name[split_name.length - 1]
+      let updated_at = new Date()
+      dbCon.query(`INSERT INTO user (prefix,first_name,last_name,position,tel,username,password,updated_at) VALUES(?,?,?,?,?,?,?,?)`, [prefix, first_name, last_name, position, tel, username, password, updated_at], (error, results, fields) => {
+        if (error) throw error;
+        res.status(200).send({ message: 'Success' });
+      });
+    }
+  });
+})
+app.post("/getUser", (req, res) => {
+  let { username } = req.body
+  let query = '1'
+  if (username) {
+    query = `username = '${username}'`
+  }
+  dbCon.query(`SELECT prefix,first_name,last_name,position,tel,username,created_at,updated_at FROM user WHERE ${query} `, (error, results, fields) => {
+    if (error) throw error;
+    console.log(results)
+    // console.log(results)
+    return res.send({ data: results });
+  });
+})
+// UPDATE user SET prefix=?, first_name = ?, last_name = ?,position = ?,tel = ?,password =?,updated_at=? WHERE username = ?;`, [prefix, first_name, last_name, position, tel, password, updated_at]
+app.post("/editUserData", async (req, res) => {
+  let { username, password, prefix, name, position, tel } = req.body;
+  if (password) {
+    let hash_pwd = await bcrypt.hash(password, 10);
+    password = hash_pwd
+  }
+  if (username && prefix && name && position && tel) {
+    let split_name = name.split(' ')
+    let first_name = split_name[0]
+    let last_name = split_name[split_name.length - 1]
+    let updated_at = new Date()
+    dbCon.query(`UPDATE user SET prefix=?, first_name = ?, last_name = ?,position = ?,tel = ?,updated_at=? WHERE username = ?`, [prefix, first_name, last_name, position, tel, updated_at,username], (error, results, fields) => {
+      if (error) throw error;
+      // console.log(results[0].password)
+      // res.send(results[0].password)
+      if (password) {
+        dbCon.query('UPDATE user SET password = ? WHERE username = ?', [password, username], (error, results, fields) => {
+          if (error) throw error;
+          res.status(200).send({ message: 'Success1' });
+        })
+      }else{
+        res.status(200).send({ message: 'Success2' });
+      }
+    });
+  }
+
+
+})
 
 app.listen(4000, () => {
   console.log("Node App is running on port 4000");
