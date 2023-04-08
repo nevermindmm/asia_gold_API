@@ -179,7 +179,6 @@ app.post("/getUser", (req, res) => {
   }
   dbCon.query(`SELECT prefix,first_name,last_name,position,tel,username,created_at,updated_at FROM user WHERE ${query} `, (error, results, fields) => {
     if (error) throw error;
-    console.log(results)
     // console.log(results)
     return res.send({ data: results });
   });
@@ -213,7 +212,6 @@ app.post("/editUserData", async (req, res) => {
 })
 app.post("/delUser", (req, res) => {
   let {username} = req.body
-  console.log(username)
   if(username){
     dbCon.query(`DELETE FROM user WHERE username = ?`,[username], (error, results, fields) => {
       if (error) throw error;
