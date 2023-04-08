@@ -195,7 +195,7 @@ app.post("/editUserData", async (req, res) => {
     let first_name = split_name[0]
     let last_name = split_name[split_name.length - 1]
     let updated_at = new Date()
-    dbCon.query(`UPDATE user SET prefix=?, first_name = ?, last_name = ?,position = ?,tel = ?,updated_at=? WHERE username = ?`, [prefix, first_name, last_name, position, tel, updated_at,username], (error, results, fields) => {
+    dbCon.query(`UPDATE user SET prefix=?, first_name = ?, last_name = ?,position = ?,tel = ?,updated_at=? WHERE username = ?`, [prefix, first_name, last_name, position, tel, updated_at, username], (error, results, fields) => {
       if (error) throw error;
       // console.log(results[0].password)
       // res.send(results[0].password)
@@ -204,16 +204,56 @@ app.post("/editUserData", async (req, res) => {
           if (error) throw error;
           res.status(200).send({ message: 'Success1' });
         })
-      }else{
+      } else {
         res.status(200).send({ message: 'Success2' });
       }
     });
   }
 })
 app.post("/delUser", (req, res) => {
-  let {username} = req.body
-  if(username){
-    dbCon.query(`DELETE FROM user WHERE username = ?`,[username], (error, results, fields) => {
+  let { username } = req.body
+  if (username) {
+    dbCon.query(`DELETE FROM user WHERE username = ?`, [username], (error, results, fields) => {
+      if (error) throw error;
+      res.status(200).send({ message: 'Success' });
+    })
+  }
+})
+app.post("/editProdData", (req, res) => {
+  let { code, type, pattern, weight, remain } = req.body
+  let weight_th
+  let splitValue = weight.split('(');
+  weight = splitValue[1].replace(')', '');
+  weight_th = splitValue[0];
+
+  // return res.send({ data: weight,weight_th });
+  if (code && type && pattern && weight) {
+    dbCon.query(`UPDATE product_list SET type=?, pattern = ?, weight= ?,weight_th= ?,remain = ? WHERE id = ?`, [type, pattern, parseFloat(weight), weight_th, parseInt(remain), code], (error, results, fields) => {
+      if (error) throw error;
+      // console.log(results)
+      res.status(200).send({ message: 'Success' });
+    });
+  }
+})
+app.post("/delProd", (req, res) => {
+  let { id } = req.body
+  console.log(id)
+  if (id) {
+    dbCon.query(`DELETE FROM product_list WHERE id = ?`, [id], (error, results, fields) => {
+      if (error) throw error;
+      res.status(200).send({ message: 'Success' });
+    })
+  }
+})
+app.post("/addProd", (req, res) => {
+  let { type, pattern, weight, remain } = req.body
+  console.log(req.body)
+  if (type && pattern && weight) {
+    let weight_th
+    let splitValue = weight.split('(');
+    weight = splitValue[1].replace(')', '');
+    weight_th = splitValue[0];
+    dbCon.query(`INSERT INTO product_list (id, type, pattern, weight, weight_th, remain) VALUES (NULL, ?, ?, ?, ?, ?);`, [type, pattern, weight, weight_th, remain], (error, results, fields) => {
       if (error) throw error;
       res.status(200).send({ message: 'Success' });
     })
