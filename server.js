@@ -210,8 +210,16 @@ app.post("/editUserData", async (req, res) => {
       }
     });
   }
-
-
+})
+app.post("/delUser", (req, res) => {
+  let {username} = req.body
+  console.log(username)
+  if(username){
+    dbCon.query(`DELETE FROM user WHERE username = ?`,[username], (error, results, fields) => {
+      if (error) throw error;
+      res.status(200).send({ message: 'Success' });
+    })
+  }
 })
 
 app.listen(4000, () => {
