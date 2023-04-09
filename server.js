@@ -260,13 +260,17 @@ app.post("/addProd", (req, res) => {
   }
 })
 app.post("/graphData", (req, res) => {
-  let { month, year } = req.body
+  let { date, month, year, platform } = req.body
+  let query = ''
+  if (date && platform) {
+    query = ` AND DAY(sales_date)=${date} AND platform=${platform}`
+  }
   if (month, year) {
     let response = {}
     dbCon.query(`SELECT platform,platform.platform_name,SUM(total_sales) as total_sales FROM sales INNER JOIN platform ON sales.platform = platform.platform_id WHERE MONTH(sales_date) = ? AND YEAR(sales_date) = ? GROUP BY platform`, [month, year], (error, results, fields) => {
       if (error) throw error;
       response.sales = results
-      dbCon.query(`SELECT prod_list FROM sales WHERE MONTH(sales_date) = ? AND YEAR(sales_date) = ?`, [month, year], (error, results, fields) => {
+      dbCon.query(`SELECT prod_list FROM sales WHERE MONTH(sales_date) = ? AND YEAR(sales_date) = ?${query}`, [month, year], (error, results, fields) => {
         if (error) throw error;
         if (results.length > 0) {
           let all_sales = []
@@ -285,7 +289,6 @@ app.post("/graphData", (req, res) => {
           }, []);
           response.best_seller = best_seller
         }
-        
         res.status(200).send(response);
       })
     })
