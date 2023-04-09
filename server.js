@@ -334,7 +334,7 @@ app.post("/login", async (req, res) => {
     }
     // If user not found, send error response
     if (results.length === 0) {
-      return res.status(201).json({ message: 'ไม่พบ Username นี้' });
+      return res.status(402).json({ message: 'username not found' });
     }
     const user = results[0];
     // Compare password
