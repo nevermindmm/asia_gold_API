@@ -1,6 +1,7 @@
 let express = require("express");
 let cors = require("cors");
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken')
 let app = express();
 let bodyParser = require("body-parser");
 let mysql = require("mysql");
@@ -16,7 +17,7 @@ app.use(cors(corsOptions));
 app.get("/", (req, res) => {
   return res.send({
     error: false,
-    message: "Reserve court website API",
+    message: "asia gold",
   });
 });
 
@@ -323,7 +324,68 @@ app.post("/graphData", (req, res) => {
     res.status(400).send('require body');
   }
 })
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  // Find user by username
+  dbCon.query('SELECT * FROM user WHERE username = ?', [username], async (err, results) => {
+    if (err) {
+      console.error('Error querying database:', err.stack);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    // If user not found, send error response
+    if (results.length === 0) {
+      return res.status(201).json({ message: 'ไม่พบ Username นี้' });
+    }
+    const user = results[0];
+    // Compare password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    // If password doesn't match, send error response
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'รหัสผ่านผิด' });
+    }
+    else {
+      const token = jwt.sign({ username: user.username }, 'asia_gold_secret_key$')
+      return res.json({ token })
+    }
+  });
+})
+app.get('/user', (req, res) => {
+  // Get the JWT token from the request header
+  const authHeader = req.headers.authorization
+  const token = authHeader && authHeader.split(' ')[1]
 
+  // If token is not found, return an error response
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  try {
+    // Verify the token with the secret key and extract the user information
+    const decoded = jwt.verify(token, 'asia_gold_secret_key$')
+    const { username } = decoded
+
+    // Execute a SELECT query to find the user with the given ID
+    dbCon.query('SELECT username,prefix,first_name,last_name,position,tel,created_at,updated_at FROM user WHERE username = ?', [username], (err, results) => {
+      // If there's an error, return an error response
+      if (err) {
+        console.error(err)
+        return res.status(500).json({ error: 'Internal Server Error' })
+      }
+
+      // If user is not found, return an error response
+      if (results.length === 0) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      // Return the user object to the client
+      const user = results[0]
+      return res.json({user:user})
+    })
+  } catch (err) {
+    // If token is invalid or expired, return an error response
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+})
 app.listen(4000, () => {
   console.log("Node App is running on port 4000");
 });
