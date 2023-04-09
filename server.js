@@ -204,7 +204,7 @@ app.post("/getUser", (req, res) => {
   if (username) {
     query = `username = '${username}'`
   }
-  dbCon.query(`SELECT prefix,first_name,last_name,position,tel,username,created_at,updated_at FROM user WHERE ${query} `, (error, results, fields) => {
+  dbCon.query(`SELECT prefix,first_name,last_name,position,tel,username,created_at,updated_at,role FROM user WHERE ${query} `, (error, results, fields) => {
     if (error) throw error;
     // console.log(results)
     return res.send({ data: results });
@@ -365,7 +365,7 @@ app.get('/user', (req, res) => {
     const { username } = decoded
 
     // Execute a SELECT query to find the user with the given ID
-    dbCon.query('SELECT username,prefix,first_name,last_name,position,tel,created_at,updated_at FROM user WHERE username = ?', [username], (err, results) => {
+    dbCon.query('SELECT username,prefix,first_name,last_name,position,tel,created_at,updated_at,role FROM user WHERE username = ?', [username], (err, results) => {
       // If there's an error, return an error response
       if (err) {
         console.error(err)
