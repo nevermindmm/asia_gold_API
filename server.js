@@ -191,7 +191,7 @@ app.post("/addUser", (req, res) => {
       let first_name = split_name[0]
       let last_name = split_name[split_name.length - 1]
       let updated_at = new Date()
-      dbCon.query(`INSERT INTO user (prefix,first_name,last_name,position,tel,username,password,updated_at) VALUES(?,?,?,?,?,?,?,?)`, [prefix, first_name, last_name, position, tel, username, password, updated_at], (error, results, fields) => {
+      dbCon.query(`INSERT INTO user (prefix,first_name,last_name,position,tel,username,password,updated_at,role) VALUES(?,?,?,?,?,?,?,?,?)`, [prefix, first_name, last_name, position, tel, username, password, updated_at,'user'], (error, results, fields) => {
         if (error) throw error;
         res.status(200).send({ message: 'Success' });
       });
@@ -287,7 +287,7 @@ app.post("/addProd", (req, res) => {
   }
 })
 app.post("/graphData", (req, res) => {
-  let { date, month, year, platform } = req.body
+  let { date, month, year, platform, is_dailyGraph } = req.body
   let query = ''
   if (date && platform) {
     query = ` AND DAY(sales_date)=${date} AND platform=${platform}`
@@ -305,16 +305,31 @@ app.post("/graphData", (req, res) => {
             let temp = JSON.parse(results[i].prod_list)
             all_sales = all_sales.concat(temp)
           }
-          let best_seller = all_sales.reduce((acc, cur) => {
-            let existingType = acc.find(item => item.type === cur.type);
-            if (existingType) {
-              existingType.qty += cur.qty;
-            } else {
-              acc.push({ type: cur.type, qty: cur.qty });
-            }
-            return acc;
-          }, []);
+          let best_seller
+          if (is_dailyGraph == true) {
+            best_seller = all_sales.reduce((acc, cur) => {
+              let existingType = acc.find(item => item.pattern === cur.pattern && item.type === cur.type);
+              if (existingType) {
+                existingType.qty += cur.qty;
+              } else {
+                acc.push({ type: cur.type, pattern: cur.pattern, qty: cur.qty });
+              }
+              return acc;
+            }, []);
+          }
+          else {
+            best_seller = all_sales.reduce((acc, cur) => {
+              let existingType = acc.find(item => item.type === cur.type);
+              if (existingType) {
+                existingType.qty += cur.qty;
+              } else {
+                acc.push({ type: cur.type, qty: cur.qty });
+              }
+              return acc;
+            }, []);
+          }
           response.best_seller = best_seller
+          // console.log(response)
         }
         res.status(200).send(response);
       })
@@ -379,7 +394,7 @@ app.get('/user', (req, res) => {
 
       // Return the user object to the client
       const user = results[0]
-      return res.json({user:user})
+      return res.json({ user: user })
     })
   } catch (err) {
     // If token is invalid or expired, return an error response
