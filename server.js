@@ -85,6 +85,7 @@ app.post("/getProdList", (req, res) => {
 app.post("/addSales", async (req, res) => {
   let { date, platform, total_sales, prod_list } = req.body;
   let prod_list_string = JSON.stringify(prod_list)
+  let conflict = {}
   for (let i = 0; i < prod_list.length; i++) {
     let temp_weight = prod_list[i].weight
     let weight = parseFloat(temp_weight.split(/[()]/)[1])
@@ -92,25 +93,29 @@ app.post("/addSales", async (req, res) => {
     dbCon.query(`SELECT remain FROM product_list WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=?`, [prod_list[i].type, prod_list[i].pattern, weight_th, weight], (error, results, fields) => {
       if (error) throw error;
       if (prod_list[i].qty > results[0].remain) {
-        let prod_conflict = { ...prod_list[i] }
-        prod_conflict.stock_remain = results[0].remain
-        return res.status(201).send(prod_conflict);
+        conflict = { ...prod_list[i] }
+        conflict.stock_remain = results[0].remain
       }
       if (i == prod_list.length - 1) {
         if (date && platform && total_sales && prod_list) {
-          for (let j = 0; j < prod_list.length; j++) {
-            let temp_weight = prod_list[j].weight
-            let weight = parseFloat(temp_weight.split(/[()]/)[1])
-            let weight_th = temp_weight.split(/[()]/)[0]
-            dbCon.query(`UPDATE product_list SET remain = remain - ? WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=? AND remain >= ?`, [prod_list[j].qty, prod_list[j].type, prod_list[j].pattern, weight_th, weight, prod_list[j].qty], (error, results, fields) => {
-              if (error) throw error;
-              if (j == prod_list.length - 1) {
-                dbCon.query(`INSERT INTO sales (platform,prod_list,sales_date,total_sales) VALUES(?,?,?,?)`, [platform, prod_list_string, date, total_sales], (error, results, fields) => {
-                  if (error) throw error;
-                  res.status(200).send({ message: 'Success' });
-                });
-              }
-            });
+          if (conflict=={}) {
+            for (let j = 0; j < prod_list.length; j++) {
+              let temp_weight = prod_list[j].weight
+              let weight = parseFloat(temp_weight.split(/[()]/)[1])
+              let weight_th = temp_weight.split(/[()]/)[0]
+              dbCon.query(`UPDATE product_list SET remain = remain - ? WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=? AND remain >= ?`, [prod_list[j].qty, prod_list[j].type, prod_list[j].pattern, weight_th, weight, prod_list[j].qty], (error, results, fields) => {
+                if (error) throw error;
+                if (j == prod_list.length - 1) {
+                  dbCon.query(`INSERT INTO sales (platform,prod_list,sales_date,total_sales) VALUES(?,?,?,?)`, [platform, prod_list_string, date, total_sales], (error, results, fields) => {
+                    if (error) throw error;
+                    res.status(200).send({ message: 'Success' });
+                  });
+                }
+              });
+            }
+          }
+          else{
+            return res.status(201).send(conflict);
           }
         }
       }
@@ -191,7 +196,7 @@ app.post("/addUser", (req, res) => {
       let first_name = split_name[0]
       let last_name = split_name[split_name.length - 1]
       let updated_at = new Date()
-      dbCon.query(`INSERT INTO user (prefix,first_name,last_name,position,tel,username,password,updated_at,role) VALUES(?,?,?,?,?,?,?,?,?)`, [prefix, first_name, last_name, position, tel, username, password, updated_at,'user'], (error, results, fields) => {
+      dbCon.query(`INSERT INTO user (prefix,first_name,last_name,position,tel,username,password,updated_at,role) VALUES(?,?,?,?,?,?,?,?,?)`, [prefix, first_name, last_name, position, tel, username, password, updated_at, 'user'], (error, results, fields) => {
         if (error) throw error;
         res.status(200).send({ message: 'Success' });
       });
