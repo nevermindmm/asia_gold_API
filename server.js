@@ -6,7 +6,7 @@ let app = express();
 let bodyParser = require("body-parser");
 let mysql = require("mysql");
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "https://asiagold-vzx3zwe6dq-an.a.run.app"],
   credentials: true,
 };
 app.use(bodyParser.json());
@@ -82,10 +82,11 @@ app.post("/getProdList", (req, res) => {
 });
 
 
-app.post("/addSales", async (req, res) => {
+app.post("/addSales", (req, res) => {
   let { date, platform, total_sales, prod_list } = req.body;
   let prod_list_string = JSON.stringify(prod_list)
   let conflict = {}
+  let count = 0
   for (let i = 0; i < prod_list.length; i++) {
     let temp_weight = prod_list[i].weight
     let weight = parseFloat(temp_weight.split(/[()]/)[1])
@@ -95,10 +96,11 @@ app.post("/addSales", async (req, res) => {
       if (prod_list[i].qty > results[0].remain) {
         conflict = { ...prod_list[i] }
         conflict.stock_remain = results[0].remain
+        count = count + 1
       }
       if (i == prod_list.length - 1) {
         if (date && platform && total_sales && prod_list) {
-          if (conflict=={}) {
+          if (count == 0) {
             for (let j = 0; j < prod_list.length; j++) {
               let temp_weight = prod_list[j].weight
               let weight = parseFloat(temp_weight.split(/[()]/)[1])
@@ -108,13 +110,13 @@ app.post("/addSales", async (req, res) => {
                 if (j == prod_list.length - 1) {
                   dbCon.query(`INSERT INTO sales (platform,prod_list,sales_date,total_sales) VALUES(?,?,?,?)`, [platform, prod_list_string, date, total_sales], (error, results, fields) => {
                     if (error) throw error;
-                    res.status(200).send({ message: 'Success' });
+                    return res.status(200).send({ message: 'Success' });
                   });
                 }
               });
             }
           }
-          else{
+          else {
             return res.status(201).send(conflict);
           }
         }
@@ -370,39 +372,26 @@ app.post("/login", async (req, res) => {
   });
 })
 app.get('/user', (req, res) => {
-  // Get the JWT token from the request header
   const authHeader = req.headers.authorization
   const token = authHeader && authHeader.split(' ')[1]
-
-  // If token is not found, return an error response
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
-
   try {
-    // Verify the token with the secret key and extract the user information
     const decoded = jwt.verify(token, 'asia_gold_secret_key$')
     const { username } = decoded
-
-    // Execute a SELECT query to find the user with the given ID
     dbCon.query('SELECT username,prefix,first_name,last_name,position,tel,created_at,updated_at,role FROM user WHERE username = ?', [username], (err, results) => {
-      // If there's an error, return an error response
       if (err) {
         console.error(err)
         return res.status(500).json({ error: 'Internal Server Error' })
       }
-
-      // If user is not found, return an error response
       if (results.length === 0) {
         return res.status(401).json({ error: 'Unauthorized' })
       }
-
-      // Return the user object to the client
       const user = results[0]
       return res.json({ user: user })
     })
   } catch (err) {
-    // If token is invalid or expired, return an error response
     return res.status(401).json({ error: 'Unauthorized' })
   }
 })
