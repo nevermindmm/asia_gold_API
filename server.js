@@ -397,7 +397,7 @@ app.get('/user', (req, res) => {
   }
 })
 app.listen(PORT, () => {
-  console.log("Node App is running on port"+PORT);
+  console.log("Node App is running on port "+PORT);
 });
 
 module.exports = app;
