@@ -13,6 +13,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
 
+const PORT = process.env.PORT || 4000
 // homepage route
 app.get("/", (req, res) => {
   return res.send({
@@ -22,11 +23,11 @@ app.get("/", (req, res) => {
 });
 
 let dbCon = mysql.createConnection({
-  host: "localhost",
+  host: "34.143.163.250",
   user: "root",
-  password: "",
+  password: `z4K]?_pVd3A1)4"v`,
   database: "asia_gold",
-  port: 3307
+  port: 3306
 });
 dbCon.connect();
 
@@ -395,8 +396,8 @@ app.get('/user', (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 })
-app.listen(4000, () => {
-  console.log("Node App is running on port 4000");
+app.listen(PORT, () => {
+  console.log("Node App is running on port"+PORT);
 });
 
 module.exports = app;
