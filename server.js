@@ -288,7 +288,7 @@ app.post("/addProd", (req, res) => {
     let splitValue = weight.split('(');
     weight = splitValue[1].replace(')', '');
     weight_th = splitValue[0];
-    dbCon.query(`INSERT INTO product_list (id, type, pattern, weight, weight_th, remain) VALUES (NULL, ?, ?, ?, ?, ?);`, [type, pattern, weight, weight_th, remain], (error, results, fields) => {
+    dbCon.query(`INSERT INTO product_list (id, type, pattern, weight, weight_th, remain) VALUES (NULL, ?, ?, ?, ?, ?);`, [type, pattern, parseFloat(weight), weight_th, remain], (error, results, fields) => {
       if (error) throw error;
       res.status(200).send({ message: 'Success' });
     })
