@@ -6,7 +6,7 @@ let app = express();
 let bodyParser = require("body-parser");
 let mysql = require("mysql");
 const corsOptions = {
-  origin: ["http://localhost:3000", "https://asiagold-vzx3zwe6dq-an.a.run.app"],
+  origin: ["http://localhost:3000", "https://asiagold-tz4ljgge7a-an.a.run.app"],
   credentials: true,
 };
 app.use(bodyParser.json());
@@ -23,9 +23,9 @@ app.get("/", (req, res) => {
 });
 
 let dbCon = mysql.createConnection({
-  host: "34.143.163.250",
+  host: "34.143.151.86",
   user: "root",
-  password: `z4K]?_pVd3A1)4"v`,
+  password: `mind1999`,
   database: "asia_gold",
   port: 3306
 });
@@ -92,37 +92,45 @@ app.post("/addSales", (req, res) => {
     let temp_weight = prod_list[i].weight
     let weight = parseFloat(temp_weight.split(/[()]/)[1])
     let weight_th = temp_weight.split(/[()]/)[0]
-    dbCon.query(`SELECT remain FROM product_list WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=?`, [prod_list[i].type, prod_list[i].pattern, weight_th, weight], (error, results, fields) => {
-      if (error) throw error;
-      if (prod_list[i].qty > results[0].remain) {
-        conflict = { ...prod_list[i] }
-        conflict.stock_remain = results[0].remain
-        count = count + 1
-      }
-      if (i == prod_list.length - 1) {
-        if (date && platform && total_sales && prod_list) {
-          if (count == 0) {
-            for (let j = 0; j < prod_list.length; j++) {
-              let temp_weight = prod_list[j].weight
-              let weight = parseFloat(temp_weight.split(/[()]/)[1])
-              let weight_th = temp_weight.split(/[()]/)[0]
-              dbCon.query(`UPDATE product_list SET remain = remain - ? WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=? AND remain >= ?`, [prod_list[j].qty, prod_list[j].type, prod_list[j].pattern, weight_th, weight, prod_list[j].qty], (error, results, fields) => {
-                if (error) throw error;
-                if (j == prod_list.length - 1) {
-                  dbCon.query(`INSERT INTO sales (platform,prod_list,sales_date,total_sales) VALUES(?,?,?,?)`, [platform, prod_list_string, date, total_sales], (error, results, fields) => {
-                    if (error) throw error;
-                    return res.status(200).send({ message: 'Success' });
-                  });
-                }
-              });
+    dbCon.query(`SELECT remain FROM product_list WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=?`,
+      [prod_list[i].type, prod_list[i].pattern, weight_th, weight],
+      (error, results, fields) => 
+      {
+        if (error) throw error;
+        if (prod_list[i].qty > results[0].remain) {
+          conflict = { ...prod_list[i] }
+          conflict.stock_remain = results[0].remain
+          count = count + 1
+        }
+        if (i == prod_list.length - 1) {
+          if (date && platform && total_sales && prod_list) {
+            if (count == 0) {
+              for (let j = 0; j < prod_list.length; j++) {
+                let temp_weight = prod_list[j].weight
+                let weight = parseFloat(temp_weight.split(/[()]/)[1])
+                let weight_th = temp_weight.split(/[()]/)[0]
+                dbCon.query(`UPDATE product_list SET remain = remain - ? WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=? AND remain >= ?`, 
+                [prod_list[j].qty, prod_list[j].type, prod_list[j].pattern, weight_th, weight, prod_list[j].qty], 
+                (error, results, fields) => 
+                {
+                  if (error) throw error;
+                  if (j == prod_list.length - 1) {
+                    dbCon.query(`INSERT INTO sales (platform,prod_list,sales_date,total_sales) VALUES(?,?,?,?)`, 
+                    [platform, prod_list_string, date, total_sales], 
+                    (error, results, fields) => {
+                      if (error) throw error;
+                      return res.status(200).send({ message: 'Success' });
+                    });
+                  }
+                });
+              }
+            }
+            else {
+              return res.status(201).send(conflict);
             }
           }
-          else {
-            return res.status(201).send(conflict);
-          }
         }
-      }
-    })
+      })
   }
 });
 
@@ -166,9 +174,9 @@ app.get("/getLimitOfSales", (req, res) => {
 
 app.post("/getSalesData", (req, res) => {
   let { month, year } = req.body;
-  let platform = []
   if (month && year) {
-    dbCon.query(`SELECT DISTINCT platform,platform.platform_name FROM sales INNER JOIN platform ON sales.platform=platform.platform_id WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? ORDER BY platform`, [year, month], (error, results, fields) => {
+    dbCon.query(`SELECT DISTINCT platform,platform.platform_name FROM sales INNER JOIN platform ON sales.platform=platform.platform_id WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? ORDER BY platform`, 
+    [year, month], (error, results, fields) => {
       if (error) throw error;
       let platform = []
       for (let i = 0; i < results.length; i++) {
@@ -178,12 +186,11 @@ app.post("/getSalesData", (req, res) => {
       for (let i = 0; i < platform.length; i++) {
         platform_query += `SUM(CASE WHEN platform = ${platform[i].platform_id} THEN total_sales ELSE 0 END) AS platform_${platform[i].platform_id}, `
       }
-      dbCon.query(`SELECT DAY(sales_date) AS sale_day,${platform_query} SUM(total_sales) AS total_sales FROM sales WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? GROUP BY sale_day ORDER BY sale_day ASC `, [year, month], (error, results, fields) => {
+      dbCon.query(`SELECT DAY(sales_date) AS sale_day,${platform_query} SUM(total_sales) AS total_sales FROM sales WHERE YEAR(sales_date) = ? AND MONTH(sales_date) = ? GROUP BY sale_day ORDER BY sale_day ASC `, 
+      [year, month], (error, results, fields) => {
         if (error) throw error;
-        // console.log(results)
         return res.send({ data: results, platform: platform });
       });
-
     });
   }
 });
@@ -260,19 +267,16 @@ app.post("/editProdData", (req, res) => {
   let splitValue = weight.split('(');
   weight = splitValue[1].replace(')', '');
   weight_th = splitValue[0];
-
-  // return res.send({ data: weight,weight_th });
   if (code && type && pattern && weight) {
-    dbCon.query(`UPDATE product_list SET type=?, pattern = ?, weight= ?,weight_th= ?,remain = ? WHERE id = ?`, [type, pattern, parseFloat(weight), weight_th, parseInt(remain), code], (error, results, fields) => {
+    dbCon.query(`UPDATE product_list SET type=?, pattern = ?, weight= ?,weight_th= ?,remain = ? WHERE id = ?`, 
+    [type, pattern, parseFloat(weight), weight_th, parseInt(remain), code], (error, results, fields) => {
       if (error) throw error;
-      // console.log(results)
       res.status(200).send({ message: 'Success' });
     });
   }
 })
 app.post("/delProd", (req, res) => {
   let { id } = req.body
-  // console.log(id)
   if (id) {
     dbCon.query(`DELETE FROM product_list WHERE id = ?`, [id], (error, results, fields) => {
       if (error) throw error;
@@ -282,13 +286,13 @@ app.post("/delProd", (req, res) => {
 })
 app.post("/addProd", (req, res) => {
   let { type, pattern, weight, remain } = req.body
-  // console.log(req.body)
   if (type && pattern && weight) {
     let weight_th
     let splitValue = weight.split('(');
     weight = splitValue[1].replace(')', '');
     weight_th = splitValue[0];
-    dbCon.query(`INSERT INTO product_list (id, type, pattern, weight, weight_th, remain) VALUES (NULL, ?, ?, ?, ?, ?);`, [type, pattern, parseFloat(weight), weight_th, remain], (error, results, fields) => {
+    dbCon.query(`INSERT INTO product_list (id, type, pattern, weight, weight_th, remain) VALUES (NULL, ?, ?, ?, ?, ?);`, 
+    [type, pattern, parseFloat(weight), weight_th, remain], (error, results, fields) => {
       if (error) throw error;
       res.status(200).send({ message: 'Success' });
     })
@@ -397,7 +401,7 @@ app.get('/user', (req, res) => {
   }
 })
 app.listen(PORT, () => {
-  console.log("Node App is running on port "+PORT);
+  console.log("Node App is running on port " + PORT);
 });
 
 module.exports = app;
