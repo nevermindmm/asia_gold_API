@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
 
-const PORT = process.env.PORT || 8080
+const PORT = process.env.PORT || 4000
 // homepage route
 app.get("/", (req, res) => {
   return res.send({
