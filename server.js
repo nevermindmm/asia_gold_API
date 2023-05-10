@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
 
-const PORT = process.env.PORT || 4000
+const PORT = process.env.PORT || 8080
 // homepage route
 app.get("/", (req, res) => {
   return res.send({
@@ -89,11 +89,9 @@ app.post("/addSales", (req, res) => {
   let conflict = {}
   let count = 0
   for (let i = 0; i < prod_list.length; i++) {
-    let temp_weight = prod_list[i].weight
-    let weight = parseFloat(temp_weight.split(/[()]/)[1])
-    let weight_th = temp_weight.split(/[()]/)[0]
-    dbCon.query(`SELECT remain FROM product_list WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=?`,
-      [prod_list[i].type, prod_list[i].pattern, weight_th, weight],
+    let weight_th = prod_list[i].weight
+    dbCon.query(`SELECT remain FROM product_list WHERE type =? AND pattern=? AND weight_th=?`,
+      [prod_list[i].type, prod_list[i].pattern, weight_th],
       (error, results, fields) => 
       {
         if (error) throw error;
@@ -106,11 +104,8 @@ app.post("/addSales", (req, res) => {
           if (date && platform && total_sales && prod_list) {
             if (count == 0) {
               for (let j = 0; j < prod_list.length; j++) {
-                let temp_weight = prod_list[j].weight
-                let weight = parseFloat(temp_weight.split(/[()]/)[1])
-                let weight_th = temp_weight.split(/[()]/)[0]
-                dbCon.query(`UPDATE product_list SET remain = remain - ? WHERE type =? AND pattern=? AND weight_th=? AND TRIM(weight)=? AND remain >= ?`, 
-                [prod_list[j].qty, prod_list[j].type, prod_list[j].pattern, weight_th, weight, prod_list[j].qty], 
+                dbCon.query(`UPDATE product_list SET remain = remain - ? WHERE type =? AND pattern=? AND weight_th=? AND remain >= ?`, 
+                [prod_list[j].qty, prod_list[j].type, prod_list[j].pattern, weight_th, prod_list[j].qty], 
                 (error, results, fields) => 
                 {
                   if (error) throw error;
@@ -263,13 +258,9 @@ app.post("/delUser", (req, res) => {
 })
 app.post("/editProdData", (req, res) => {
   let { code, type, pattern, weight, remain } = req.body
-  let weight_th
-  let splitValue = weight.split('(');
-  weight = splitValue[1].replace(')', '');
-  weight_th = splitValue[0];
   if (code && type && pattern && weight) {
-    dbCon.query(`UPDATE product_list SET type=?, pattern = ?, weight= ?,weight_th= ?,remain = ? WHERE id = ?`, 
-    [type, pattern, parseFloat(weight), weight_th, parseInt(remain), code], (error, results, fields) => {
+    dbCon.query(`UPDATE product_list SET type=?, pattern = ?,weight_th= ?,remain = ? WHERE id = ?`, 
+    [type, pattern, weight, parseInt(remain), code], (error, results, fields) => {
       if (error) throw error;
       res.status(200).send({ message: 'Success' });
     });
@@ -287,12 +278,8 @@ app.post("/delProd", (req, res) => {
 app.post("/addProd", (req, res) => {
   let { type, pattern, weight, remain } = req.body
   if (type && pattern && weight) {
-    let weight_th
-    let splitValue = weight.split('(');
-    weight = splitValue[1].replace(')', '');
-    weight_th = splitValue[0];
-    dbCon.query(`INSERT INTO product_list (id, type, pattern, weight, weight_th, remain) VALUES (NULL, ?, ?, ?, ?, ?);`, 
-    [type, pattern, parseFloat(weight), weight_th, remain], (error, results, fields) => {
+    dbCon.query(`INSERT INTO product_list (id, type, pattern, weight_th, remain) VALUES (NULL, ?, ?, ?, ?);`, 
+    [type, pattern, weight, remain], (error, results, fields) => {
       if (error) throw error;
       res.status(200).send({ message: 'Success' });
     })
